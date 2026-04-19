@@ -17,7 +17,7 @@
 
 ### Project Introduction
 
-This repository collects reverse-engineering materials for three wireless mouse firmware families. Its purpose is to document firmware architecture, runtime behavior, configuration protocols, sensor data paths, and device-side feature logic for lawful interoperability research, defensive security analysis, education, archival study, and owner-authorized repair or maintenance.
+This repository collects reverse-engineering materials for four wireless mouse firmware families. Its purpose is to document firmware architecture, runtime behavior, configuration protocols, sensor data paths, and device-side feature logic for lawful interoperability research, defensive security analysis, education, archival study, and owner-authorized repair or maintenance.
 
 The project currently includes original firmware images, decompiled or structured C-like outputs, and architecture/behavior analysis reports produced during the reverse-engineering process.
 
@@ -27,20 +27,23 @@ The project currently includes original firmware images, decompiled or structure
 | --- | --- | --- |
 | `VAXEE` | `NP-01S_v2_Driver_Version.bin`, `Dongle_Driver_Version_HighSpeedUSB.bin`, `NP-01S_v2_Driver_Version.bin_structured.c` | Reverse-engineering materials for the VAXEE NP-01S v2 firmware set and its high-speed USB dongle image, focused on the end-to-end motion data path, firmware-layer mechanisms that shape perceived mouse feel, and the implementation details of competition mode and trajectory mode. |
 | `CRDRAKO` | `54H_mouse_Cpurad_App_v01.06.01.12.hex`, `54H_dongle_Cpuapp_App_v01.06.01.12.hex`, `54H_dongle_Cpurad_App_v01.06.01.12.hex` | Reverse-engineering materials for the 54H mouse and dongle firmware family, focused on the end-to-end motion data path, firmware-layer mechanisms that influence perceived mouse feel, and the implementation details of competition mode. |
+| `NINJUTSO` | `sora-v3_mouse_pid57360_ver_ae1606.bin`, `sora-v3_mouse_pid57360_ver_ae1607.bin`, `sora-v3_mouse_pid57360_ver_ae1609.bin`, `sora-v3_mouse_pid57360_ver_ae1609.bin.c` | Reverse-engineering materials for the Ninjutso Sora V3 firmware set, built on a PixArt-custom main controller and sensor, focused on the `ver_ae1609` sample's `ROM`-driven dual-layer runtime architecture, profile materialization, route-aware wireless `transport` organization, and the firmware-side behavior behind `System Mode`, `LOD`, optical settings, `report-rate` handling, and the marketed `Frame Sync` claim. |
 | `CHAOS` | `CHAOS_8K_J.hex`, `dever151.bin`, `dever151.bin.c` | Reverse-engineering materials for the CHAOS 8K firmware set, focused on the implementation details of its 25,000 FPS overclocked competition mode, together with firmware-side tuning logic associated with the vendor-specific "feel value" and "Fei Lei Shen" features, within an overall codebase that appears relatively immature and unstable by current market standards. |
 
 ### Family Selection Rationale
 
-These three firmware families were selected because they form a useful comparison set across different product tiers and engineering models in the wireless gaming mouse market:
+These four firmware families were selected because they form a useful comparison set across different product tiers, integration styles, and engineering models in the wireless gaming mouse market:
 
 - `VAXEE` is treated here as a representative example of self-developed firmware for a high-end wireless gaming mouse. It is especially valuable for studying vendors that appear to have a stronger in-house understanding of sensor tuning, motion-path handling, and feel-oriented firmware behavior.
 - `CRDRAKO` is treated here as a representative example of a high-end wireless gaming mouse firmware stack delivered by a specialized embedded solution provider. It is useful as a reference point for the firmware architecture, implementation patterns, and engineering level seen across a large share of commercially available gaming mice.
-- `CHAOS` is treated here as a representative example of self-developed firmware for an entry-level wireless mouse. In this project's assessment, it appears materially weaker than the other two families in feature completeness, code quality, architectural discipline, and performance stability, and in several areas falls below what would generally be considered an average market baseline. Even so, it remains useful for studying how lower-cost products approach tuning logic, performance tradeoffs, and firmware organization.
+- `NINJUTSO` is treated here as a representative high-end wireless gaming mouse firmware sample built on a PixArt-custom main controller and sensor. It is especially useful for studying firmware layering, sensor script application, runtime frame construction, and wireless `transport` organization under a PixArt-custom solution.
+- `CHAOS` is treated here as a representative example of self-developed firmware for an entry-level wireless mouse. In this project's assessment, it appears materially weaker than the other three families in feature completeness, code quality, architectural discipline, and performance stability, and in several areas falls below what would generally be considered an average market baseline. Even so, it remains useful for studying how lower-cost products approach tuning logic, performance tradeoffs, and firmware organization.
 
 ### Repository Contents
 
 - `VAXEE`: [English](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.en.md) | [Traditional Chinese](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.zh-TW.md) | [Simplified Chinese](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.zh-CN.md)
 - `CRDRAKO`: [English](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_en.md) | [Traditional Chinese](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_zh-TW.md) | [Simplified Chinese](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_zh-CN.md)
+- `NINJUTSO`: [English](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_en.md) | [Traditional Chinese](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_zh-TW.md) | [Simplified Chinese](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_zh-CN.md)
 - `CHAOS`: [English](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.en.md) | [Traditional Chinese](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.zh-TW.md) | [Simplified Chinese](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.zh-CN.md)
 
 ### Formal Legal Notice and Reverse-Engineering Disclaimer
@@ -72,7 +75,7 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 
 ### 專案簡介
 
-本儲存庫彙整了三組無線滑鼠韌體的逆向工程材料，目的在於記錄韌體架構、執行流程、設定協議、感測器資料路徑，以及裝置端功能邏輯，供合法的互通性研究、防禦性安全研究、教學、檔案保存，以及裝置所有人或經授權者進行維修與維護時參考。
+本儲存庫彙整了四組無線滑鼠韌體的逆向工程材料，目的在於記錄韌體架構、執行流程、設定協議、感測器資料路徑，以及裝置端功能邏輯，供合法的互通性研究、防禦性安全研究、教學、檔案保存，以及裝置所有人或經授權者進行維修與維護時參考。
 
 目前內容包含原始韌體映像、反編譯或結構化 C 類輸出，以及逆向分析過程中整理出的架構與行為分析報告。
 
@@ -82,20 +85,23 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 | --- | --- | --- |
 | `VAXEE` | `NP-01S_v2_Driver_Version.bin`、`Dongle_Driver_Version_HighSpeedUSB.bin`、`NP-01S_v2_Driver_Version.bin_structured.c` | VAXEE NP-01S v2 滑鼠韌體與高速 USB 接收器映像的逆向材料，重點分析移動資料的端到端流轉路徑、影響滑鼠手感的韌體層機制，以及競技模式與軌跡模式的實作細節。 |
 | `CRDRAKO` | `54H_mouse_Cpurad_App_v01.06.01.12.hex`、`54H_dongle_Cpuapp_App_v01.06.01.12.hex`、`54H_dongle_Cpurad_App_v01.06.01.12.hex` | 54H 滑鼠與接收器韌體家族的逆向材料，重點分析移動資料的端到端流轉路徑、影響滑鼠手感的韌體層機制，以及競技模式的實作細節。 |
+| `NINJUTSO` | `sora-v3_mouse_pid57360_ver_ae1606.bin`、`sora-v3_mouse_pid57360_ver_ae1607.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin.c` | Ninjutso Sora V3 滑鼠韌體逆向材料，採用原相客製主控與原相客製感測器，重點分析 `ver_ae1609` 樣本中由 `ROM` 主導的雙層執行架構、`profile` 到執行期映像的物化流程、具 route-aware 特性的無線 `transport` 組織方式，以及 `System Mode`、`LOD`、optical 設定、`report-rate` 與「Frame Sync」宣稱在韌體中的實際行為。 |
 | `CHAOS` | `CHAOS_8K_J.hex`、`dever.bin`、`dever.bin.c` | CHAOS 8K 滑鼠韌體相關逆向材料，重點分析 25,000 FPS 超頻競技模式的實作細節，以及與「手感值」與「飛雷神」功能相關的韌體級調校邏輯；整體程式碼與系統設計則呈現出相對不成熟且穩定性偏弱的特徵。 |
 
 ### 家族選用說明
 
-之所以選擇這三組韌體作為對照樣本，是因為它們能夠分別代表無線遊戲滑鼠市場中，不同產品定位與工程模式下的典型實作方向：
+之所以選擇這四組韌體作為對照樣本，是因為它們能夠分別代表無線遊戲滑鼠市場中，不同產品定位、整合方案與工程模式下的典型實作方向：
 
 - `VAXEE` 在本專案中被視為高階自研無線遊戲滑鼠韌體的代表樣本，特別適合作為研究感測器調校能力、移動資料處理路徑，以及以手感為導向之韌體設計思路的參考對象。
 - `CRDRAKO` 在本專案中被視為由專門嵌入式方案供應商提供之高階無線遊戲滑鼠韌體代表樣本，可作為觀察市場上大多數商用滑鼠在韌體架構、實作模式與整體工程成熟度上的重要參考基準。
-- `CHAOS` 在本專案中被視為低階自研無線滑鼠韌體的代表樣本。依本專案的分析判斷，其在功能完整度、程式碼品質、架構紀律與性能穩定性上，均明顯弱於前兩者，且若以現行市場的一般水準衡量，部分面向甚至低於常見平均線。不過，它仍然具有研究價值，特別適合用來觀察低成本產品在調校邏輯、性能取捨與韌體組織方式上的典型問題。
+- `NINJUTSO` 在本專案中被視為採用原相客製主控與原相客製感測器的高階無線電競滑鼠韌體代表樣本，特別適合作為觀察原相客製方案在韌體分層、感測器腳本套用、執行期組幀與無線 `transport` 組織方式上的參考對象。
+- `CHAOS` 在本專案中被視為低階自研無線滑鼠韌體的代表樣本。依本專案的分析判斷，其在功能完整度、程式碼品質、架構紀律與性能穩定性上，均明顯弱於其餘三者，且若以現行市場的一般水準衡量，部分面向甚至低於常見平均線。不過，它仍然具有研究價值，特別適合用來觀察低成本產品在調校邏輯、性能取捨與韌體組織方式上的典型問題。
 
 ### 儲存庫內容
 
 - `VAXEE`: [English](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.en.md) | [繁體中文](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.zh-TW.md) | [简体中文](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.zh-CN.md)
 - `CRDRAKO`: [English](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_en.md) | [繁體中文](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_zh-TW.md) | [简体中文](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_zh-CN.md)
+- `NINJUTSO`: [English](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_en.md) | [繁體中文](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_zh-TW.md) | [简体中文](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_zh-CN.md)
 - `CHAOS`: [English](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.en.md) | [繁體中文](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.zh-TW.md) | [简体中文](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.zh-CN.md)
 
 ### 正式法律通知與逆向聲明
@@ -128,7 +134,7 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 
 ### 项目简介
 
-本仓库汇总了三组无线鼠标固件的逆向工程材料，目标是记录固件架构、运行流程、配置协议、传感器数据路径，以及设备端功能逻辑，供合法的互操作性研究、防御性安全研究、教学、资料归档，以及设备所有人或经授权者开展维修与维护时参考。
+本仓库汇总了四组无线鼠标固件的逆向工程材料，目标是记录固件架构、运行流程、配置协议、传感器数据路径，以及设备端功能逻辑，供合法的互操作性研究、防御性安全研究、教学、资料归档，以及设备所有人或经授权者开展维修与维护时参考。
 
 当前内容包含原始固件镜像、反编译或结构化 C 类输出，以及在逆向分析过程中整理出的架构与行为分析报告。
 
@@ -138,20 +144,23 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 | --- | --- | --- |
 | `VAXEE` | `NP-01S_v2_Driver_Version.bin`、`Dongle_Driver_Version_HighSpeedUSB.bin`、`NP-01S_v2_Driver_Version.bin_structured.c` | VAXEE NP-01S v2 鼠标固件与高速 USB 接收器镜像的逆向材料，重点分析移动数据的端到端流转路径、影响鼠标手感的固件层机制，以及竞技模式与轨迹模式的实现细节。 |
 | `CRDRAKO` | `54H_mouse_Cpurad_App_v01.06.01.12.hex`、`54H_dongle_Cpuapp_App_v01.06.01.12.hex`、`54H_dongle_Cpurad_App_v01.06.01.12.hex` | 54H 鼠标与接收器固件家族的逆向材料，重点分析移动数据的端到端流转路径、影响鼠标手感的固件层机制，以及竞技模式的实现细节。 |
+| `NINJUTSO` | `sora-v3_mouse_pid57360_ver_ae1606.bin`、`sora-v3_mouse_pid57360_ver_ae1607.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin.c` | Ninjutso Sora V3 鼠标固件逆向材料，采用原相定制主控与原相定制传感器，重点分析 `ver_ae1609` 样本中由 `ROM` 主导的双层运行架构、`profile` 到运行时镜像的物化流程、具 route-aware 特性的无线 `transport` 组织方式，以及 `System Mode`、`LOD`、optical 设置、`report-rate` 与“Frame Sync”宣传在固件中的实际行为。 |
 | `CHAOS` | `CHAOS_8K_J.hex`、`dever151.bin`、`dever151.bin.c` | CHAOS 8K 鼠标固件相关逆向材料，重点分析 25,000 FPS 超频竞技模式的实现细节，以及与“手感值”和“飞雷神”功能相关的固件级调校逻辑；其整体代码与系统设计则表现出相对不成熟且稳定性偏弱的特征。 |
 
 ### 家族选用说明
 
-之所以选择这三组固件作为对照样本，是因为它们能够分别代表无线游戏鼠标市场中，不同产品定位与工程模式下的典型实现方向：
+之所以选择这四组固件作为对照样本，是因为它们能够分别代表无线游戏鼠标市场中，不同产品定位、整合方案与工程模式下的典型实现方向：
 
 - `VAXEE` 在本项目中被视为高端自研无线游戏鼠标固件的代表样本，特别适合作为研究传感器调校能力、移动数据处理路径，以及以手感为导向的固件设计思路的参考对象。
 - `CRDRAKO` 在本项目中被视为由专门嵌入式方案供应商提供的高端无线游戏鼠标固件代表样本，可作为观察市场上大多数商用鼠标在固件架构、实现模式与整体工程成熟度上的重要参考基准。
-- `CHAOS` 在本项目中被视为低端自研无线鼠标固件的代表样本。依本项目的分析判断，它在功能完整度、代码质量、架构纪律与性能稳定性上都明显弱于前两者，且若以当前市场的一般水平衡量，部分方面甚至低于常见平均线。不过，它依然具有研究价值，尤其适合作为观察低成本产品在调校逻辑、性能取舍与固件组织方式上典型问题的样本。
+- `NINJUTSO` 在本项目中被视为采用原相定制主控与原相定制传感器的高端无线游戏鼠标固件代表样本，特别适合作为观察原相定制方案在固件分层、传感器脚本应用、运行时构帧与无线 `transport` 组织方式上的参考对象。
+- `CHAOS` 在本项目中被视为低端自研无线鼠标固件的代表样本。依本项目的分析判断，它在功能完整度、代码质量、架构纪律与性能稳定性上都明显弱于其余三者，且若以当前市场的一般水平衡量，部分方面甚至低于常见平均线。不过，它依然具有研究价值，尤其适合作为观察低成本产品在调校逻辑、性能取舍与固件组织方式上典型问题的样本。
 
 ### 仓库内容
 
 - `VAXEE`: [English](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.en.md) | [繁體中文](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.zh-TW.md) | [简体中文](./VAXEE/VAXEE_NP-01S_v2_firmware_analysis_report.zh-CN.md)
 - `CRDRAKO`: [English](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_en.md) | [繁體中文](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_zh-TW.md) | [简体中文](./CRDRAKO/CRDRAKO_54H_mouse_firmware_arch_analysis_zh-CN.md)
+- `NINJUTSO`: [English](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_en.md) | [繁體中文](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_zh-TW.md) | [简体中文](./NINJUTSO/Ninjutso_mouse_firmware_arch_analysis_zh-CN.md)
 - `CHAOS`: [English](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.en.md) | [繁體中文](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.zh-TW.md) | [简体中文](./CHAOS/CHAOS_FIRMWARE_ARCH_ANALYSIS.zh-CN.md)
 
 ### 正式法律通知与逆向免责声明
@@ -173,4 +182,3 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 ### 致谢
 
 特别感谢中国外设爱好者 **“小白菜”** 对本项目的支持。
-
