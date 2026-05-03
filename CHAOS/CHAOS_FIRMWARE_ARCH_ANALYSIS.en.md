@@ -33,6 +33,90 @@ This document is based primarily on first-hand IDA Pro decompilation from the cu
 - `feel` and `assist press` are not “one PAW3395 register that directly changes feel”. They are firmware-side motion transformations built on remapping, quantization, and smoothing.
 - The “25,000 fps” note is an engineering interpretation. The firmware does not literally store the string `"25000 fps"`, but the script deltas, the extra register-write path, and known project-side conclusions support reading Overclock as the 25,000 fps sampling tier.
 
+### 0.4 Update Record (Updated: 2026-04-30, New Firmware: `deverV0.1.4_20260430.bin`)
+
+This section records the delta observed relative to the previous sample. The short version is straightforward: this update adds a noticeable amount of product-facing functionality, but it still very much looks like CHAOS-family firmware, meaning the development pattern is still “keep stuffing things in until it works, then keep adding patches until it stops collapsing immediately.” From a firmware-engineering standpoint, this revision is still not good. It does more than the previous build and covers more link scenarios, but those gains come mainly from piling on more modules, more state machines, and more compatibility branches rather than from any real structural cleanup. The sample still shows obvious engineering-quality problems: heavy global-state dependence, continuously accumulating legacy compatibility burden, repeated mismatches between naming and actual behavior, and strong reliance on patch-style fixes and path branching. In other words, what improved here is the deliverable surface, not the implementation quality; the gap with mainstream mouse firmware remains large.
+
+#### 0.4.1 Most visible change: from a wireless-main-path firmware to a mixed-link platform
+
+In terms of functional scope, the new build is no longer just a single wireless-main-path firmware. It has grown into a mixed-link platform that explicitly covers wireless, wired, and charging scenarios:
+
+- startup logs now include `USB mouse APP starting...`
+- the architecture banner explicitly says `modular APP + low-latency wired HID`
+- the firmware switches between `WIRELESS / WIRED_HOST / CHARGER_ONLY`
+- the wired side no longer exposes only mouse HID; it also brings up keyboard / config / media interfaces
+
+From an engineering-quality perspective, however, this is scope expansion, not architectural convergence. The firmware simply layers more links and more device roles on top of the existing implementation without establishing a sufficiently clean unified control plane. There are more link states, more service roles, and longer init/switch paths, but the core organization is still global state plus branch-heavy dispatch. Platform capability has increased, but implementation complexity has grown faster, and structural quality has not improved accordingly.
+
+#### 0.4.2 The configuration protocol is more complete, but also exposes more incremental patching
+
+Compared with the previous build, this revision clearly expands the configuration protocol and fills in several entry points that were previously ambiguous or absent:
+
+- `0x14` is no longer an unresolved “special hardware action”; it now lands clearly as `SET_DFU`
+- a new `0x24` factory reset command is added while the old `0xFF` legacy factory reset path is still kept for compatibility
+- `0x25` is added for pair-token writeback
+- `0x27` is added for charge-status query
+- configuration replies no longer rely only on wireless ACK flow; they can also be routed through a dedicated `cfg_hid` queue
+
+This shows the protocol has moved from “barely sufficient” toward “feature-complete,” but the way it evolves is still additive patching rather than controlled refactoring. New commands keep being added, old commands keep being retained, and reply paths keep branching. The protocol looks more complete on the surface, yet its internal semantics are not noticeably more unified. In mature firmware, protocol growth is usually accompanied by clearer version boundaries, semantic normalization, and shrinking legacy burden; this sample instead looks like more patches being attached to the existing protocol surface. That may satisfy product requirements in the short term, but it raises maintenance cost and behavioral ambiguity over time.
+
+#### 0.4.3 `feel` and “assist press” were not removed; they were moved into a shared motion-processing layer
+
+This is one of the most important implementation-level changes in the update: motion-feel logic that used to be scattered across the old wireless path has started to be consolidated into a shared motion-processing layer.
+
+- `feel` still keeps the same core algorithm: amplify internal CPI by `min(26000 / dpi, feel)`, then fold it back through remainder-preserving quantization
+- “assist press” still keeps the 5-sample moving average; it did not become a new algorithm, it only changed landing point
+- both features are no longer tied only to the old wireless main path; they are now collected into an explicit `motion_processor`
+- wired and wireless paths both reuse this same motion-processing layer
+
+That is somewhat better than the previous build’s scattered path-local implementation, but it still does not qualify as real decoupling. The current `motion_processor` looks more like centralized wrapping around old logic than a clean redesign of motion-processing boundaries. Configuration state, mode bits, link differences, and output behavior are still obviously coupled through globals, and control/data separation is still incomplete. In practical terms, this update solves the “stop copying the same logic everywhere” problem, but it does not solve the more important “how should this logic be modeled cleanly and stably” problem.
+
+#### 0.4.4 PAW3395 profile semantics drifted, and the naming is less honest than before
+
+In the previous report, Low Power / High Performance / Competition / Overclock could still be mapped into a relatively stable set of mode semantics. In the new build, the directly confirmable top-level profile names have become:
+
+- `legacy low-power profile`
+- `legacy high-performance profile`
+- `legacy USB profile`
+- `2W5 overclock init/profile`
+
+This means the profile semantics have drifted. The previously identifiable `competition profile` is no longer present as a clean standalone mode and is effectively replaced, at least at the naming layer, by `legacy USB profile`. From an engineering-review perspective, this is not a good sign. In mature firmware, UI names, configuration-bit meaning, low-level scripts, and runtime behavior should stay as monotonically aligned as possible. What this sample shows instead is that naming, historical tuning intent, and current implementation were not reorganized; they were merely left piled together and kept running. That directly hurts maintainability and raises the cost of later verification and reverse engineering.
+
+#### 0.4.5 A whole ring of surrounding state machines was added: pairing, charging, DFU, and link recovery
+
+This revision clearly fills in many surrounding operational flows, and it does so mainly by adding more state machines and more process branches:
+
+- there is now a formal pairing flow with enter, timeout, success, and failure handling
+- successful pairing stores `rand/model` bytes and refreshes the wireless base address
+- charging detection and `CHARGER_ONLY` switching are present
+- a DFU entry path is present
+- USB session start/stop, stall recovery, and power-removal shutdown paths are also present
+
+This shows the firmware has started to cover the edge cases a real shipping product must handle, but the implementation style remains coarse. These flows are not managed through a genuinely unified session manager, event model, or lifecycle abstraction. Instead, the firmware keeps adding explicit enter/exit/fail/retry/recover paths and distributing behavior across more local states and conditions. The product-level coverage is broader, but the state space has expanded substantially. In engineering terms, this is “the scenarios are covered,” not “the system has been made orderly.”
+
+#### 0.4.6 Some old problems were not solved; they were only hidden behind the new framework
+
+The most obvious example is `motion sync`. In the new build it still behaves like a preserved historical placeholder that never actually closes into a concrete behavior:
+
+- the flag can still be stored
+- the configuration surface can still carry it
+- but it still does not enter a clear, concrete motion-processing main path
+
+From an engineering standpoint, this kind of leftover bit is not harmless detail; it is direct evidence of weak implementation discipline. It shows a continued gap between exposed capability and actual landed behavior: an interface can be exposed first, a config bit can be preserved first, but the behavior definition is not closed and the call chain is not completed. This “declare the semantic first, maybe implement it later, possibly never finish it” pattern is common in low-quality firmware. It keeps producing ambiguity, false assumptions, and historical debt, and it is one of the reasons samples like this remain structurally weak over time.
+
+#### 0.4.7 Overall Assessment of This Update
+
+The essence of this update is not an implementation-quality upgrade. It is a visible functional expansion. The firmware now includes wired USB, config HID, pairing, charging, DFU, and link-recovery capabilities that product firmware is expected to cover, so the set of things it can do is indeed larger than before. But from an engineering standpoint, these changes did not make the system more orderly; they amplified structural problems that were already there. The firmware still depends heavily on global state, still uses more state machines and compatibility entry points to cover more scenarios, and still lacks sufficiently clear module boundaries and consistent control abstractions. As a result, implementation quality did not rise in step with feature count.
+
+To put it more directly, this revision is still a low-quality firmware sample:
+
+- it addresses feature gaps, not structural loss of control
+- it adds paths and branches, not verifiable and convergent unifying mechanisms
+- it repackages old logic into new modules without clearing the old global dependencies or semantic baggage
+- it looks more complete as a product, but it still carries obvious patchwork, stitched-together, and low-consistency implementation traits
+
+So the most accurate summary of this update is not “the firmware matured,” but “the firmware got bigger.” It is more deliverable-looking than the previous revision, but it is still far from a mature implementation with clear design, explicit boundaries, controlled state, and constrained technical debt; measured against mainstream mouse-firmware engineering standards, the gap remains large.
+
 ---
 
 ## 1. Overall Firmware Framework
@@ -1388,5 +1472,3 @@ Among them:
 - the profile defines the sensor's low-level operating style
 - `feel` defines the quantization model
 - `assist press` defines the output smoothing model
-
-

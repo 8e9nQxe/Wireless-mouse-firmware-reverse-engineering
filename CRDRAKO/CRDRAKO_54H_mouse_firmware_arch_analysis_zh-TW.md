@@ -27,6 +27,127 @@
 
 - IDA 資料庫：`/54H_mouse_Cpurad_App_v01.06.01.12.hex.i64`
 
+### 0.3 更新章節（更新時間：2026-04-30，新韌體：`54H_mouse_Cpurad_App_v01.07.01.14.bin`，相對 `v01.06.01.12`）
+
+#### 0.3.1 結論
+
+這次更新屬於一次明確的產品化迭代，而不是單純的參數刷新。韌體底座沒有改變，仍然沿用同一條 `Zephyr + PAW3950 + profile/macro/protocol` 路線；主要差異在執行時組織方式，以及產品周邊子系統的補齊。
+
+從舊版報告與舊版反編譯 C 來看，`v01.06.01.12` 的主線仍然高度集中在 `feature_report_rx_thread`、`control_protocol_worker_thread`、`control_event_dispatch_thread`、`control_transport_mode_switch_thread`，以及 `sensor_3950_worker_thread + sensor_irq_thread` 這組核心執行緒上。新版本沒有推翻這套骨架，但把更多職責拆成了顯式背景服務。
+
+#### 0.3.2 已確認的變化
+
+##### 1. 建置平台版本更明確
+
+- 新韌體直接暴露：
+  - `Booting nRF Connect SDK v3.1.0-6c6e5b32496e`
+  - `Using Zephyr OS v4.1.99-1612683d4010`
+- 這表示新版本已經明確落在新的 nRF Connect SDK / Zephyr 組合上，而不只是從執行模型側間接判斷平台風格。
+
+##### 2. 執行時任務拆分明顯增多
+
+相較舊版主要依賴少數幾個大執行緒承載控制、事件與後端邏輯，新版本啟動路徑中已確認建立出下列命名服務：
+
+| 新執行單元 | 建立位置 | 作用方向 |
+| --- | --- | --- |
+| `battery_adc_thread` | `sub_E05C5C8` | 電池取樣 |
+| `Button liftoff Thread` | `sub_E05D490` | 按鍵放開 / 邊沿處理 |
+| `Button event Main Thread` | `sub_E05E19C` | 輸入事件聚合 |
+| `Keep CPU alive Thread` | `sub_E05E4C0` | 保活策略 |
+| `effect process Thread` | `sub_E05ED4C` | 效果處理 |
+| `Sleep Wakeup check Thread` | `sub_E05F044` | 睡眠 / 喚醒巡檢 |
+| `SPI_Prepare_Thread` | `sub_E05FB10` | 感測器側 SPI 準備 |
+| `rf_voice_ctrl cmd process Thread` | `sub_E060310` | RF 側輔助命令通道 |
+| `macro Main Thread` | `sub_E0619D4` | 巨集服務 |
+| `system mode Thread` | `sub_E061D34` | 模式管理 |
+| `Protocol cmd process Thread` | `sub_E062538` | 協議命令處理 |
+| `RF_test_Thread` | `sub_E0632F8` | RF 測試路徑 |
+| `usbd_app` | `sub_E064620` | USB 應用側服務 |
+| `RF_RX_DECODE_Thread` | `sub_E0654A0` | RF 接收 decode 階段 |
+| `RF_RX_RECV_Thread` | `sub_E0659B4` | RF 接收 recv 階段 |
+| `usbd` | `sub_E0688B8` | USB device 側服務 |
+| `PAW3950 Main Thread` + `PAW3950 Poll done Thread` | `sub_E070188` | 感測器主循環與 poll 完成處理 |
+
+從工程角度來看，這表示新版已經從「少數核心 worker 承載多數職責」的組織方式，轉向「依產品子系統拆出背景服務」的組織方式。
+
+##### 3. 感測器後端被重組成更明確的流水線
+
+- 舊版報告中的 3950 後端主要圍繞 `sensor_3950_worker_thread` 和 `sensor_irq_thread` 展開。
+- 新版則明確出現：
+  - `SPI_Prepare_Thread`
+  - `PAW3950 Main Thread`
+  - `PAW3950 Poll done Thread`
+- `sub_E070230()` 反映出分階段的 PAW3950 握手 / bring-up 路徑。
+- `sub_E070530()` 反映出初始化完成後對快取執行態參數的批量回放。
+
+這表示新版在感測器後端組織上更完整：匯流排準備、主處理與 poll 完成三個環節都被明確分離了出來。
+
+##### 4. 電源與電池相關邏輯顯式化
+
+- 新版新增了：
+  - `battery_adc_thread`
+  - `Keep CPU alive Thread`
+  - `Sleep Wakeup check Thread`
+- 相較舊版主要從 transport switching 和 reset supervision 的角度描述低功耗 / 恢復邏輯，新版把電量取樣、保活與喚醒巡檢直接做成了背景服務。
+
+這種變化更接近商用品韌體常見的組織方式，因為它把功耗相關職責從附屬邏輯提升成了可獨立排程的執行單元。
+
+##### 5. USB 與 RF 接收路徑更完整
+
+- 新版字串中直接出現：
+  - `USBHS_CORE`
+  - `hid_dev_0/1/2`
+  - `hid_0/1/2`
+  - `usbhs@86000`
+- 同時還有顯式執行緒：
+  - `usbd_app`
+  - `usbd`
+  - `RF_RX_DECODE_Thread`
+  - `RF_RX_RECV_Thread`
+  - `RF_test_Thread`
+
+相較舊版報告更強調 feature report 入口與統一控制執行緒的寫法，新版在 USB 裝置堆疊與 RF 接收流水線上給出了更完整的背景結構。
+
+##### 6. 側功能面持續擴展
+
+- `effect process Thread` 說明效果處理被單獨抽離。
+- `rf_voice_ctrl cmd process Thread` 說明存在額外的 RF 側輔助命令路徑。
+- 二進位中也出現了產品字串 `KO-ONE`。
+
+這表示新版不只是內部重組，面向產品功能面的韌體職責本身也在擴大。
+
+#### 0.3.3 未改變的骨架
+
+- 新版仍然沿用同一家族的核心方向：
+  - 仍然是 Zephyr / nRF Connect SDK 路線
+  - 仍然是 PAW3950 路線
+  - 仍然保留 profile / protocol / macro 這套基本模型
+- 因此，這次更新更適合被理解為在舊底座上的擴展，而不是重新設計。
+
+#### 0.3.4 工程含義
+
+相較 `v01.06.01.12`，新版本在產品完整度上前進了一步。USB、RF 接收、電池管理、睡眠喚醒與感測器後端編排都比舊版更完整，也更容易在執行時結構中被辨識出來。
+
+同時，它的演進方式仍然是增量式的：透過增加背景服務與狀態組織來擴展能力，而不是透過一次架構收斂來降低控制面的複雜度。換句話說，這是一次內容充實、組織更完整的版本更新，但不是一次推倒重來的重構版。
+
+#### 0.3.5 協議欄位與 profile 語義層更新
+
+舊版 `v01.06.01.12` 的活動配置熱路徑，基本上仍然是「`214B profile` 固定偏移 + 直接改位元組 + 直接調 `g_sensor_ops`」這一套；新版 `v01.07.01.14` 在 `sub_E070530()` / `sub_E0705C0()` 這條鏈路裡，已經改成「活動快取 + 內部命令號 + 感測器指令碼回放」的組織方式。也就是說，舊版那種從 profile 偏移直接讀出執行時語義的觀察方法，在新版裡仍然部分成立，但已經不足以覆蓋整條熱路徑。
+
+| 舊版欄位 / 結構 | `v01.06.01.12` 語義 | `v01.07.01.14` 對應落點 | 更新判讀 |
+| --- | --- | --- | --- |
+| `profile +0x35/+0x37`、`+0x39/+0x3B`、`+0x5C` | 目前 DPI 對、次級 DPI 對，以及兩者之間的選擇旗標 | `word_2300A4CA/word_2300A4C8`、內部 `case 2`、`sub_E070530()`；`sub_E0705C0()` 仍保留 `6999 DPI` 閾值聯動 | DPI 對本身已被確認保留，但已不再用「單一 profile 位元組 + 直接回撥」的方式暴露；舊版獨立的 `+0x5C` 選擇旗標，在這條新熱路徑裡不再作為單獨欄位出現，更像是被吸收到快取態與模式態裡 |
+| `profile +0x59` | `LOD code` | `byte_2300B882`、內部 `case 5` | 高信度延續。新版仍保留一個原始編碼位元組，而且仍有後端/模式相關的取值分支，只是不再直接表現為 profile 固定偏移 |
+| `profile +0x5A` | `Angle Tune` | `byte_2300B87F`、內部 `case 8` | 高信度延續。舊版的單位元組調參項，在新版裡仍然是獨立的標量快取與獨立 apply case |
+| `profile +0x54` | `Motion Sync` | 高機率對應 `byte_2300B87E`、內部 `case 9`、`sub_E06FE2C()` / `sub_E070490()` | 高機率對映。新版這裡已不是簡單布林回撥，而是帶有一組暫存器位與參數回放的啟停序列，表示該項已被提升成顯式後端配置過程 |
+| `profile +0x55`、`+0x56`、`+0x58` | `Angle Snap`、`Ripple Control`、`XY Sync` 三個小開關 | `byte_2300B883`、`byte_2300B881`、`byte_2300B880`，對應內部 `case 4/6/7` | 可以確認這三類小型布林感測器配置仍然存在，但新版已將它們拆成獨立活動快取；僅從目前工作執行緒還無法把三者和 `case 4/6/7` 做完全無歧義的一一命名，還需要再沿外層協議分發點追一跳 |
+| `profile +0x57`、`+0x5B` | `Hyper Mode`、`Competition Mode`，並與 polling / perf 模式聯動 | `byte_2300B885`、`byte_2300B884`、內部 `case 3`，以及 `sub_E076FB8()`、`sub_E0772B6()`、`sub_E0775B4()`、`sub_E07798A()`、`sub_E077CB2()`、`sub_E077FDE()` 這組感測器指令碼函式 | 這是本次語義層更新裡最明確的一處重寫。舊版是「兩個 profile 開關位 + 若干條件分支」，新版已改成「請求模式值 + 目前已套用的指令碼類別 + 多個後端指令碼入口」的顯式狀態機；其中 `value == 4` 還保留了 `6999 DPI` 閾值驅動的自動分流 |
+| `profile +0x53` | polling / perf 混合控制位元組 | 在目前新工作執行緒裡，不再以單一 profile 熱欄位形態出現；只剩 `case 1/10` 重放門、`byte_2300B87C/byte_2300B87D` 與 `word_2300A49C` 這類外圍狀態可見 | 這不能證明該控制已消失，但可以確認它不再和其它感測器熱配置一起，以「連續 profile 位元組」的形式暴露在同一條執行時路徑上 |
+
+這一層更新的工程意義很直接：舊版更接近「儲存布局就是執行時語義」，新版則已經拆成「儲存語義、活動快取、內部命令、後端指令碼」四層。這樣做的直接收益，是感測器重新 bring-up 之後可以透過 `sub_E070530()` 做一次集中回放，也更適合處理初始化失敗、後端切換與模式重入。
+
+但也要注意，當前證據只足以證明「執行時熱路徑被重新序列化了」，還不能僅憑這條鏈路就斷言底層持久化 blob 已經徹底放棄舊版 `214B profile` 結構。能被確認的變化，是配置語義已經從「固定偏移直達行為」變成了「快取態與狀態機驅動行為」。
+
 ---
 
 ## 1. 韌體總體框架
@@ -955,4 +1076,5 @@ flowchart TD
 ## 12. 總結
 
 本文已經將這份韌體的主骨架系統梳理為四個層面。第一，整體架構是標準的 Zephyr 風格多執行緒模型，配置協議、感測器後端、非同步事件和無線排程之間的分層關係已經清楚。第二，3950 相關的 Hyper / Competition / Polling 不是零散暫存器位，而是共同驅動 `perf mode 1/2/3/4A/4B/5` 六套指令碼，其中 `mode 4` 還會在 DPI 真正寫入後按 `6999 DPI` 閾值校正到最終子指令碼。第三，配置命令最終統一匯入 `control_protocol_worker_thread`，profile 欄位、執行態全域性物件和 backend 應用路徑之間已經能夠逐項對齊。第四，真正改變主觀輸出節奏的韌體層機制，不是 Motion Sync / Angle Snap 這些感測器暫存器選項，而是“運動累計 + carry 回灌 + 週期沖刷 + radio 子時隙排程”這一整條事件時序鏈。
+
 

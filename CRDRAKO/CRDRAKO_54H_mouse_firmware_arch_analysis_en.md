@@ -27,6 +27,127 @@ This file uses the current IDA Pro reverse-engineering database as the primary s
 
 - IDA database: `/54H_mouse_Cpurad_App_v01.06.01.12.hex.i64`
 
+### 0.3 Update Section (Updated: 2026-04-30, New Firmware: `54H_mouse_Cpurad_App_v01.07.01.14.bin`, vs `v01.06.01.12`)
+
+#### 0.3.1 Conclusion
+
+This update is a clear productization iteration rather than a simple parameter refresh. The firmware base has not changed: it still follows the same `Zephyr + PAW3950 + profile/macro/protocol` line. The main delta is in runtime organization and in the expansion of product-facing subsystems.
+
+The previous version, as reflected in the old report and the old decompiled C, was still heavily centered on `feature_report_rx_thread`, `control_protocol_worker_thread`, `control_event_dispatch_thread`, `control_transport_mode_switch_thread`, and the `sensor_3950_worker_thread + sensor_irq_thread` pair. The new image keeps that general backbone, but it exposes a much broader set of named background services.
+
+#### 0.3.2 Confirmed Changes
+
+##### 1. The build baseline is now explicit
+
+- The new firmware directly exposes:
+  - `Booting nRF Connect SDK v3.1.0-6c6e5b32496e`
+  - `Using Zephyr OS v4.1.99-1612683d4010`
+- In the older version, the platform family could be inferred from the runtime model. In the new version, the SDK / OS combination is directly visible in the image.
+
+##### 2. Runtime task decomposition increased substantially
+
+Compared with the old version, which relied on a smaller number of large worker threads, the new startup path now creates the following named services:
+
+| New runtime unit | Creation site | Functional direction |
+| --- | --- | --- |
+| `battery_adc_thread` | `sub_E05C5C8` | battery sampling |
+| `Button liftoff Thread` | `sub_E05D490` | button release / edge handling |
+| `Button event Main Thread` | `sub_E05E19C` | input-event aggregation |
+| `Keep CPU alive Thread` | `sub_E05E4C0` | keepalive policy |
+| `effect process Thread` | `sub_E05ED4C` | effect-side processing |
+| `Sleep Wakeup check Thread` | `sub_E05F044` | sleep / wake checking |
+| `SPI_Prepare_Thread` | `sub_E05FB10` | sensor-side SPI preparation |
+| `rf_voice_ctrl cmd process Thread` | `sub_E060310` | auxiliary RF-side command path |
+| `macro Main Thread` | `sub_E0619D4` | macro service |
+| `system mode Thread` | `sub_E061D34` | mode management |
+| `Protocol cmd process Thread` | `sub_E062538` | protocol command execution |
+| `RF_test_Thread` | `sub_E0632F8` | RF test path |
+| `usbd_app` | `sub_E064620` | USB application-side service |
+| `RF_RX_DECODE_Thread` | `sub_E0654A0` | RF receive decode stage |
+| `RF_RX_RECV_Thread` | `sub_E0659B4` | RF receive receive stage |
+| `usbd` | `sub_E0688B8` | USB device-side service |
+| `PAW3950 Main Thread` + `PAW3950 Poll done Thread` | `sub_E070188` | sensor main loop and poll-completion handling |
+
+From an engineering perspective, this is the most visible architectural change in the new image. The firmware moved from a model where a few large workers carried most responsibilities toward a model where responsibilities are broken out by product subsystem.
+
+##### 3. The sensor backend is now organized as a clearer pipeline
+
+- The old report described the 3950 backend mainly through `sensor_3950_worker_thread` and `sensor_irq_thread`.
+- The new image explicitly adds:
+  - `SPI_Prepare_Thread`
+  - `PAW3950 Main Thread`
+  - `PAW3950 Poll done Thread`
+- `sub_E070230()` shows a staged PAW3950 handshake / bring-up path.
+- `sub_E070530()` shows a batch replay of cached runtime parameters after that bring-up completes.
+
+This indicates a more complete backend organization, with bus preparation, main backend work, and poll-completion handling exposed as separate stages.
+
+##### 4. Power and battery logic became explicit subsystems
+
+- The new image adds:
+  - `battery_adc_thread`
+  - `Keep CPU alive Thread`
+  - `Sleep Wakeup check Thread`
+- In the older version, low-power and recovery logic was still described mainly through transport switching and reset supervision.
+
+The new organization is closer to a product firmware structure, because battery sampling, keepalive behavior, and wake-state checks are now independent scheduled services.
+
+##### 5. USB and RF receive paths are more complete
+
+- New strings directly expose:
+  - `USBHS_CORE`
+  - `hid_dev_0/1/2`
+  - `hid_0/1/2`
+  - `usbhs@86000`
+- New threads also include:
+  - `usbd_app`
+  - `usbd`
+  - `RF_RX_DECODE_Thread`
+  - `RF_RX_RECV_Thread`
+  - `RF_test_Thread`
+
+Relative to the older report, which emphasized feature-report ingress and unified control handling, the new version presents a much more explicit USB device stack and RF receive pipeline.
+
+##### 6. Side-feature surface area expanded
+
+- `effect process Thread` shows that effect-side handling has been separated.
+- `rf_voice_ctrl cmd process Thread` shows an additional RF-side auxiliary command path.
+- The product string `KO-ONE` is also present in the new binary.
+
+This suggests that the new build is not only reorganizing internals, but also carrying a broader product-facing feature surface.
+
+#### 0.3.3 What Did Not Change
+
+- The new image still follows the same family direction:
+  - still Zephyr / nRF Connect SDK based
+  - still PAW3950 based
+  - still driven by the same profile / protocol / macro model
+- As a result, the update is better understood as an extension of the old base rather than a redesign.
+
+#### 0.3.4 Engineering Meaning
+
+Relative to `v01.06.01.12`, the new version is more complete as a product firmware. USB, RF receive, battery management, sleep/wakeup handling, and sensor-backend orchestration are all more explicit and easier to identify in the runtime structure.
+
+At the same time, the evolution remains incremental. Capability is expanded by adding background services and state organization on top of the old base, rather than by performing a converging architecture cleanup. In other words, this is a materially richer update, but not a from-scratch rewrite.
+
+#### 0.3.5 Protocol-Field and Profile-Semantic Update
+
+In `v01.06.01.12`, the active-configuration hot path still looked very close to a direct `214B profile` record model: fixed offsets were updated, and runtime behavior was driven almost immediately through `g_sensor_ops`. In `v01.07.01.14`, the `sub_E070530()` / `sub_E0705C0()` path is already organized differently: active settings are first expanded into scalar caches, and are then replayed through internal message cases and sensor-side script selection. That means the old “profile offset equals runtime meaning” reading model still works partially, but it no longer describes the full hot path.
+
+| Old field / structure | Meaning in `v01.06.01.12` | Landing point in `v01.07.01.14` | Update reading |
+| --- | --- | --- | --- |
+| `profile +0x35/+0x37`, `+0x39/+0x3B`, `+0x5C` | active DPI pair, secondary DPI pair, and the selector between them | `word_2300A4CA/word_2300A4C8`, internal `case 2`, `sub_E070530()`; `sub_E0705C0()` still preserves the `6999 DPI` threshold coupling | The DPI pair itself is clearly retained, but it is no longer exposed as a single profile-byte-driven callback path. The old standalone `+0x5C` selector is no longer visible as an independent field in this hot path and appears to have been absorbed into cached state and mode state |
+| `profile +0x59` | `LOD code` | `byte_2300B882`, internal `case 5` | High-confidence carry-over. The new version still keeps a raw encoded byte with backend/mode-dependent value handling, but it is no longer presented as a naked profile offset |
+| `profile +0x5A` | `Angle Tune` | `byte_2300B87F`, internal `case 8` | High-confidence carry-over. The old scalar tuning item remains a dedicated scalar cache plus a dedicated apply case |
+| `profile +0x54` | `Motion Sync` | very likely `byte_2300B87E`, internal `case 9`, `sub_E06FE2C()` / `sub_E070490()` | High-probability mapping. This is no longer a simple boolean callback; it has become an explicit enable/disable sequence with register-bit and parameter replay on the sensor side |
+| `profile +0x55`, `+0x56`, `+0x58` | `Angle Snap`, `Ripple Control`, and `XY Sync` | `byte_2300B883`, `byte_2300B881`, `byte_2300B880`, via internal `case 4/6/7` | It is clear that these three small boolean sensor options still exist, but the new version materializes them as separate active caches. From the worker thread alone, the exact one-to-one naming of `case 4/6/7` is not yet fully disambiguated; one more hop through the outer protocol dispatcher is still needed |
+| `profile +0x57`, `+0x5B` | `Hyper Mode`, `Competition Mode`, with polling/perf coupling | `byte_2300B885`, `byte_2300B884`, internal `case 3`, and the sensor-script set `sub_E076FB8()`, `sub_E0772B6()`, `sub_E0775B4()`, `sub_E07798A()`, `sub_E077CB2()`, `sub_E077FDE()` | This is the clearest semantic rewrite in the update. The old model used two profile flags plus conditional branches; the new model is an explicit state machine with a requested mode value, a currently applied backend-script class, and multiple script entry points. `value == 4` still preserves the `6999 DPI` threshold driven auto-selection path |
+| `profile +0x53` | mixed polling / perf control byte | no longer exposed as a single hot profile field in the current new worker path; only outer state such as the `case 1/10` replay gate, `byte_2300B87C/byte_2300B87D`, and `word_2300A49C` remains visible | This does not prove the control disappeared, but it does show that it no longer sits next to the other hot sensor fields in the same obvious contiguous profile-byte form |
+
+The engineering meaning of this update is straightforward: the old version was much closer to “storage layout equals runtime semantics,” while the new version already separates storage semantics, active caches, internal commands, and backend scripts into four layers. The direct payoff is that sensor bring-up can be followed by a centralized replay through `sub_E070530()`, which is better suited for initialization failure handling, backend switching, and mode re-entry.
+
+At the same time, the current evidence only proves that the runtime hot path has been re-serialized. It is not yet sufficient, from this path alone, to claim that the persistent blob underneath has fully abandoned the old `214B profile` structure. What is confirmed is the semantic shift: behavior is no longer driven by fixed offsets alone, but by cached state plus an internal state machine.
+
 ---
 
 ## 1. Overall Firmware Framework
@@ -954,4 +1075,5 @@ flowchart TD
 ## 12. Summary
 
 This document systematically organizes the firmware's main skeleton into four layers. First, the overall architecture is a standard Zephyr-style multithreaded model, and the layering relationship among the configuration protocol, sensor backend, asynchronous events, and wireless scheduling is now clear. Second, the 3950-related Hyper / Competition / Polling settings are not isolated register bits. Together they drive six script families: `perf mode 1/2/3/4A/4B/5`, with `mode 4` further corrected to its final variant after the real DPI write based on the `6999 DPI` threshold. Third, configuration commands ultimately converge on `control_protocol_worker_thread`, and the mapping among profile fields, runtime global objects, and backend application paths can now be aligned item by item. Fourth, the firmware-layer mechanisms that truly change subjective output rhythm are not sensor-register options such as Motion Sync or Angle Snap, but the entire event-timing chain of `motion accumulation + carry reinjection + periodic flush + radio subslot scheduling`.
+
 

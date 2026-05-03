@@ -27,6 +27,127 @@
 
 - IDA 数据库：`/54H_mouse_Cpurad_App_v01.06.01.12.hex.i64`
 
+### 0.3 更新记录（更新时间：2026-04-30，新固件：`54H_mouse_Cpurad_App_v01.07.01.14.bin`，相对 `v01.06.01.12`）
+
+#### 0.3.1 结论
+
+这次更新属于一次明确的产品化迭代，不是简单的参数修订。固件底座没有改变，仍然沿用同一条 `Zephyr + PAW3950 + profile/macro/protocol` 路线；变化主要体现在运行时组织方式和外围产品子系统的补齐上。
+
+从旧版报告和旧版反编译 C 可以看到，`v01.06.01.12` 的主线仍然高度集中在 `feature_report_rx_thread`、`control_protocol_worker_thread`、`control_event_dispatch_thread`、`control_transport_mode_switch_thread`，以及 `sensor_3950_worker_thread + sensor_irq_thread` 这组核心线程上。新版本没有推翻这套骨架，但把更多职责拆成了显式后台服务。
+
+#### 0.3.2 已确认的变化
+
+##### 1. 构建平台版本更明确
+
+- 新固件直接暴露：
+  - `Booting nRF Connect SDK v3.1.0-6c6e5b32496e`
+  - `Using Zephyr OS v4.1.99-1612683d4010`
+- 这说明新版本已经明确落在新的 nRF Connect SDK / Zephyr 组合上，而不是仅能从运行模型侧间接判断平台风格。
+
+##### 2. 运行时任务拆分明显增多
+
+相较旧版主要依赖少数几个大线程承载控制、事件和后端逻辑，新版本启动路径中已确认创建出下列命名服务：
+
+| 新运行单元 | 创建位置 | 作用方向 |
+| --- | --- | --- |
+| `battery_adc_thread` | `sub_E05C5C8` | 电池采样 |
+| `Button liftoff Thread` | `sub_E05D490` | 按键抬起 / 边沿处理 |
+| `Button event Main Thread` | `sub_E05E19C` | 输入事件聚合 |
+| `Keep CPU alive Thread` | `sub_E05E4C0` | 保活策略 |
+| `effect process Thread` | `sub_E05ED4C` | 效果处理 |
+| `Sleep Wakeup check Thread` | `sub_E05F044` | 睡眠 / 唤醒巡检 |
+| `SPI_Prepare_Thread` | `sub_E05FB10` | 传感器侧 SPI 准备 |
+| `rf_voice_ctrl cmd process Thread` | `sub_E060310` | RF 侧辅助命令通道 |
+| `macro Main Thread` | `sub_E0619D4` | 宏服务 |
+| `system mode Thread` | `sub_E061D34` | 模式管理 |
+| `Protocol cmd process Thread` | `sub_E062538` | 协议命令处理 |
+| `RF_test_Thread` | `sub_E0632F8` | RF 测试路径 |
+| `usbd_app` | `sub_E064620` | USB 应用侧服务 |
+| `RF_RX_DECODE_Thread` | `sub_E0654A0` | RF 接收 decode 阶段 |
+| `RF_RX_RECV_Thread` | `sub_E0659B4` | RF 接收 recv 阶段 |
+| `usbd` | `sub_E0688B8` | USB device 侧服务 |
+| `PAW3950 Main Thread` + `PAW3950 Poll done Thread` | `sub_E070188` | 传感器主循环与 poll 完成处理 |
+
+从工程角度看，这说明新版已经从“少数核心 worker 承载多数职责”的组织方式，转向“按产品子系统拆出后台服务”的组织方式。
+
+##### 3. 传感器后端被重组为更明确的流水线
+
+- 旧版报告中的 3950 后端主要围绕 `sensor_3950_worker_thread` 和 `sensor_irq_thread` 展开。
+- 新版则明确出现：
+  - `SPI_Prepare_Thread`
+  - `PAW3950 Main Thread`
+  - `PAW3950 Poll done Thread`
+- `sub_E070230()` 体现了分阶段的 PAW3950 握手 / bring-up 路径。
+- `sub_E070530()` 体现了初始化完成后的缓存运行态参数回放。
+
+这意味着新版在传感器后端组织上更完整：总线准备、主处理与 poll 完成三个环节都被明确分离了出来。
+
+##### 4. 电源与电池相关逻辑显式化
+
+- 新版新增了：
+  - `battery_adc_thread`
+  - `Keep CPU alive Thread`
+  - `Sleep Wakeup check Thread`
+- 相较旧版主要从 transport switching 和 reset supervision 角度描述低功耗 / 恢复逻辑，新版把电量采样、保活和唤醒巡检直接做成了后台服务。
+
+这类变化更接近商用品固件常见的组织方式，因为它把功耗相关职责从附属逻辑提升成了可独立调度的运行单元。
+
+##### 5. USB 与 RF 接收路径更完整
+
+- 新版字符串中直接出现：
+  - `USBHS_CORE`
+  - `hid_dev_0/1/2`
+  - `hid_0/1/2`
+  - `usbhs@86000`
+- 同时还有显式线程：
+  - `usbd_app`
+  - `usbd`
+  - `RF_RX_DECODE_Thread`
+  - `RF_RX_RECV_Thread`
+  - `RF_test_Thread`
+
+相较旧版报告更强调 feature report 入口与统一控制线程的写法，新版在 USB 设备栈和 RF 接收流水线上给出了更完整的后台结构。
+
+##### 6. 侧功能面继续扩展
+
+- `effect process Thread` 说明效果处理被单独抽离。
+- `rf_voice_ctrl cmd process Thread` 说明存在额外的 RF 侧辅助命令路径。
+- 二进制中还出现了产品字符串 `KO-ONE`。
+
+这说明新版不只是内部重组，面向产品功能面的固件职责也在扩大。
+
+#### 0.3.3 未改变的骨架
+
+- 新版仍然沿用同一家族的核心方向：
+  - 仍然是 Zephyr / nRF Connect SDK 路线
+  - 仍然是 PAW3950 路线
+  - 仍然保留 profile / protocol / macro 这套基本模型
+- 因此，这次更新更适合被理解为在旧底座上的扩展，而不是重新设计。
+
+#### 0.3.4 工程含义
+
+相较 `v01.06.01.12`，新版本在产品完整度上前进了一步。USB、RF 接收、电池管理、睡眠唤醒和传感器后端编排都比旧版更完整，也更容易在运行时结构中被识别出来。
+
+与此同时，它的演进方式仍然是增量式的：通过增加后台服务和状态组织来扩展能力，而不是通过一次架构收敛来减少控制面的复杂度。换句话说，这是一次内容充实、组织更完整的版本更新，但不是一次推倒重来的重构版。
+
+#### 0.3.5 协议字段与 profile 语义层更新
+
+旧版 `v01.06.01.12` 的活动配置热路径，基本仍然是“`214B profile` 固定偏移 + 直接改字节 + 直接调 `g_sensor_ops`”这一套；新版 `v01.07.01.14` 在 `sub_E070530()` / `sub_E0705C0()` 这条链路里，已经换成了“活动缓存 + 内部命令号 + 传感器脚本回放”的组织方式。换句话说，旧版那种从 profile 偏移直接读出运行时语义的观察方式，在新版里仍然可用，但只能看到一部分；真正热路径已经被拆散并重新串接了。
+
+| 旧版字段 / 结构 | `v01.06.01.12` 语义 | `v01.07.01.14` 对应落点 | 更新判断 |
+| --- | --- | --- | --- |
+| `profile +0x35/+0x37`、`+0x39/+0x3B`、`+0x5C` | 当前 DPI 对、次级 DPI 对、以及二者选择标志 | `word_2300A4CA/word_2300A4C8`、内部 `case 2`、`sub_E070530()`；`sub_E0705C0()` 继续保留 `6999 DPI` 阈值联动 | DPI 对本身被确认保留，但不再以“单一 profile 字节 + 直接回调”的方式暴露；旧版独立的 `+0x5C` 选择标志在这条新热路径里不再作为单独字段出现，更像是被吸收到缓存态和模式态里了 |
+| `profile +0x59` | `LOD code` | `byte_2300B882`、内部 `case 5` | 高置信度延续。新版仍然保留一个原始编码字节，并且仍然带有后端/模式相关的取值分支，只是它不再直接表现为 profile 固定偏移 |
+| `profile +0x5A` | `Angle Tune` | `byte_2300B87F`、内部 `case 8` | 高置信度延续。旧版的单字节调参项，在新版里仍然是单独的标量缓存和独立应用 case |
+| `profile +0x54` | `Motion Sync` | 大概率对应 `byte_2300B87E`、内部 `case 9`、`sub_E06FE2C()` / `sub_E070490()` | 高概率映射。新版这里已经不是简单布尔回调，而是带有一组寄存器位和参数回放的启停序列，说明该项被提升成了显式后端配置过程 |
+| `profile +0x55`、`+0x56`、`+0x58` | `Angle Snap`、`Ripple Control`、`XY Sync` 三个小开关 | `byte_2300B883`、`byte_2300B881`、`byte_2300B880`，对应内部 `case 4/6/7` | 可以确认这三类“小布尔配置”仍然存在，但新版已经把它们拆成独立活动缓存；仅从当前工作线程还无法把三者和 `case 4/6/7` 做完全无歧义的一一命名，需要再沿外层协议分发点追一跳 |
+| `profile +0x57`、`+0x5B` | `Hyper Mode`、`Competition Mode`，并与 polling / perf 模式联动 | `byte_2300B885`、`byte_2300B884`、内部 `case 3`，以及 `sub_E076FB8()`、`sub_E0772B6()`、`sub_E0775B4()`、`sub_E07798A()`、`sub_E077CB2()`、`sub_E077FDE()` 这组传感器脚本函数 | 这是本次语义层更新里最明确的一处重写。旧版是“两个 profile 开关位 + 若干条件分支”，新版已经改成“请求模式值 + 当前已应用脚本类 + 多个后端脚本入口”的显式状态机；其中 `value == 4` 还保留了 `6999 DPI` 阈值驱动的自动分流 |
+| `profile +0x53` | polling / perf 混合控制字节 | 在当前新工作线程里不再以单一 profile 热字段形态出现；只剩 `case 1/10` 重放门、`byte_2300B87C/byte_2300B87D` 与 `word_2300A49C` 这类外围状态 | 不能证明该控制已经消失，但可以确认它不再和其它传感器热配置一起以“连续 profile 字节”的形式暴露在同一条运行时路径上 |
+
+这一层更新的工程意义很明确：旧版更接近“存储布局就是运行时语义”，新版则已经变成“存储语义、活动缓存、内部命令、后端脚本”四层分离。这样做的直接收益，是传感器重新 bring-up 之后可以用 `sub_E070530()` 做一次集中回放，也更适合处理初始化失败、后端切换和模式重入。
+
+但也要注意，当前证据只足以证明“运行时热路径被重新序列化了”，还不能仅凭这条链路就断言底层持久化 blob 已经彻底抛弃旧版 `214B profile` 结构。能确认变化的，是配置语义从“固定偏移直达行为”变成了“缓存态和状态机驱动行为”。
+
 ---
 
 ## 1. 固件总体框架
