@@ -23,12 +23,33 @@ The project currently includes original firmware images, decompiled or structure
 
 ### Included Firmware Families
 
-| Folder | Firmware Set | Brief Description | Update Notes |
-| --- | --- | --- | --- |
-| `VAXEE` | `NP-01S_v2_Driver.c` | Reverse-engineering materials for the VAXEE NP-01S v2 firmware set and its high-speed USB dongle image, focused on the end-to-end motion data path, firmware-layer mechanisms that shape perceived mouse feel, and the implementation details of competition mode and trajectory mode. | `-` |
-| `CRDRAKO` | `54H_mouse_Cpurad_App_v01.07.01.14.bin`, `54H_dongle_Cpuapp_App_v01.07.01.14.bin`, `54H_dongle_Cpurad_App_v01.07.01.14.bin`, `54H_mouse_Cpurad_App_v01.06.01.12.c` | Reverse-engineering materials for the 54H mouse and dongle firmware family, focused on the end-to-end motion data path, firmware-layer mechanisms that influence perceived mouse feel, and the implementation details of competition mode. | `2026-04-30`: added update analysis for `54H_mouse_Cpurad_App_v01.07.01.14.bin`. Relative to `v01.06.01.12`, the new build still sits on the same `Zephyr + PAW3950 + profile/macro/protocol` base, but makes the platform version explicit and further decomposes runtime responsibilities into clearer USB, RF receive, battery, power-management, sensor-backend, and protocol-processing services. The configuration hot path also shifts from direct profile-offset application toward an active-cache, internal-command, and backend-script replay model, which makes this update better understood as a productization-oriented incremental expansion rather than a base-level rewrite. |
-| `NINJUTSO` | `sora-v3_mouse_pid57360_ver_ae1606.bin`, `sora-v3_mouse_pid57360_ver_ae1607.bin`, `sora-v3_mouse_pid57360_ver_ae1609.bin`, `sora-v3_mouse_pid57360_ver_ae1609.bin.c` | Reverse-engineering materials for the Ninjutso Sora V3 firmware set, built on a PixArt-custom main controller and sensor, focused on the `ver_ae1609` sample's `ROM`-driven dual-layer runtime architecture, profile materialization, route-aware wireless `transport` organization, and the firmware-side behavior behind `System Mode`, `LOD`, optical settings, `report-rate` handling, and the marketed `Frame Sync` claim. | `-` |
-| `CHAOS` | `CHAOS_8K_J__20260430.hex`, `deverV0.1.4_20260430.bin`, `zephyr.signed_20260430.bin` | Reverse-engineering materials for the CHAOS 8K firmware set, focused on the implementation details of its 25,000 FPS overclocked competition mode, together with firmware-side tuning logic associated with the vendor-specific "feel value" and "Fei Lei Shen" features, within an overall codebase that appears relatively immature and unstable by current market standards. | `2026-04-30`: added update analysis for `deverV0.1.4_20260430.bin`; the new build broadens protocol coverage and adds mixed-link, pairing, charging, DFU, and link-recovery paths, but the implementation still shows patch-accumulated control flow, heavy global-state coupling, weak semantic discipline, and poor boundary control. Its firmware implementation level remains low, and the gap from mainstream mouse firmware engineering practice remains large. |
+#### `VAXEE`
+
+- Folder: `VAXEE`
+- Firmware Set: `NP-01S_v2_Driver.c`
+- Brief Description: Reverse-engineering materials for the VAXEE NP-01S v2 firmware set and its high-speed USB dongle image, focused on the end-to-end motion data path, firmware-layer mechanisms that shape perceived mouse feel, and the implementation details of competition mode and trajectory mode.
+- Update Notes: `-`
+
+#### `CRDRAKO`
+
+- Folder: `CRDRAKO`
+- Firmware Set: `54H_mouse_Cpurad_App_v01.07.01.14.bin`<br>`54H_dongle_Cpuapp_App_v01.07.01.14.bin`<br>`54H_dongle_Cpurad_App_v01.07.01.14.bin`<br>`54H_mouse_Cpurad_App_v01.06.01.12.c`
+- Brief Description: Reverse-engineering materials for the 54H mouse and dongle firmware family, focused on the end-to-end motion data path, firmware-layer mechanisms that influence perceived mouse feel, and the implementation details of competition mode.
+- Update Notes: `2026-04-30`: added update analysis for `54H_mouse_Cpurad_App_v01.07.01.14.bin`. Relative to `v01.06.01.12`, the new build still sits on the same `Zephyr + PAW3950 + profile/macro/protocol` base, but makes the platform version explicit and further decomposes runtime responsibilities into clearer USB, RF receive, battery, power-management, sensor-backend, and protocol-processing services. The configuration hot path also shifts from direct profile-offset application toward an active-cache, internal-command, and backend-script replay model, which makes this update better understood as a productization-oriented incremental expansion rather than a base-level rewrite.
+
+#### `NINJUTSO`
+
+- Folder: `NINJUTSO`
+- Firmware Set: `sora-v3_mouse_pid57360_ver_ae1606.bin`<br>`sora-v3_mouse_pid57360_ver_ae1607.bin`<br>`sora-v3_mouse_pid57360_ver_ae1609.bin`<br>`sora-v3_mouse_pid57360_ver_ae1609.bin.c`
+- Brief Description: Reverse-engineering materials for the Ninjutso Sora V3 firmware set, built on a PixArt-custom main controller and sensor, focused on the `ver_ae1609` sample's `ROM`-driven dual-layer runtime architecture, profile materialization, route-aware wireless `transport` organization, and the firmware-side behavior behind `System Mode`, `LOD`, optical settings, `report-rate` handling, and the marketed `Frame Sync` claim.
+- Update Notes: `-`
+
+#### `CHAOS`
+
+- Folder: `CHAOS`
+- Firmware Set: `CHAOS_8K_J__20260430.hex`<br>`deverV0.1.4_20260430.bin`<br>`zephyr.signed_20260430.bin`
+- Brief Description: Reverse-engineering materials for the CHAOS 8K firmware set, focused on the implementation details of its 25,000 FPS overclocked competition mode, together with firmware-side tuning logic associated with the vendor-specific "feel value" and "Fei Lei Shen" features, within an overall codebase that appears relatively immature and unstable by current market standards.
+- Update Notes: `2026-04-30`: added update analysis for `deverV0.1.4_20260430.bin`; the new build broadens protocol coverage and adds mixed-link, pairing, charging, DFU, and link-recovery paths, but the implementation still shows patch-accumulated control flow, heavy global-state coupling, weak semantic discipline, and poor boundary control. Its firmware implementation level remains low, and the gap from mainstream mouse firmware engineering practice remains large.
 
 ### Family Selection Rationale
 
@@ -81,12 +102,33 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 
 ### 收錄的韌體家族
 
-| 資料夾 | 韌體集合 | 簡要說明 | 更新記錄 |
-| --- | --- | --- | --- |
-| `VAXEE` | `NP-01S_v2_Driver.c` | VAXEE NP-01S v2 滑鼠韌體與高速 USB 接收器映像的逆向材料，重點分析移動資料的端到端流轉路徑、影響滑鼠手感的韌體層機制，以及競技模式與軌跡模式的實作細節。 | `-` |
-| `CRDRAKO` | `54H_mouse_Cpurad_App_v01.07.01.14.bin`、`54H_dongle_Cpuapp_App_v01.07.01.14.bin`、`54H_dongle_Cpurad_App_v01.07.01.14.bin`、`54H_mouse_Cpurad_App_v01.06.01.12.c` | 54H 滑鼠與接收器韌體家族的逆向材料，重點分析移動資料的端到端流轉路徑、影響滑鼠手感的韌體層機制，以及競技模式的實作細節。 | `2026-04-30`：新增 `54H_mouse_Cpurad_App_v01.07.01.14.bin` 更新分析。相對 `v01.06.01.12`，新版仍然建立在同一條 `Zephyr + PAW3950 + profile/macro/protocol` 底座上，但已將平台版本明確化，並把執行時職責進一步拆成較清楚的 USB、RF 接收、電池、電源管理、感測器後端與協議處理服務。配置熱路徑也從舊版直接以 profile 固定偏移驅動行為，演進為活動快取、內部命令與後端指令碼回放相結合的模型，因此更適合被理解為一次面向產品化的增量擴寫，而不是底座重構。 |
-| `NINJUTSO` | `sora-v3_mouse_pid57360_ver_ae1606.bin`、`sora-v3_mouse_pid57360_ver_ae1607.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin.c` | Ninjutso Sora V3 滑鼠韌體逆向材料，採用原相客製主控與原相客製感測器，重點分析 `ver_ae1609` 樣本中由 `ROM` 主導的雙層執行架構、`profile` 到執行期映像的物化流程、具 route-aware 特性的無線 `transport` 組織方式，以及 `System Mode`、`LOD`、optical 設定、`report-rate` 與「Frame Sync」宣稱在韌體中的實際行為。 | `-` |
-| `CHAOS` | `CHAOS_8K_J__20260430.hex`、`deverV0.1.4_20260430.bin`、`zephyr.signed_20260430.bin` | CHAOS 8K 滑鼠韌體相關逆向材料，重點分析 25,000 FPS 超頻競技模式的實作細節，以及與「手感值」與「飛雷神」功能相關的韌體級調校邏輯；整體程式碼與系統設計則呈現出相對不成熟且穩定性偏弱的特徵。 | `2026-04-30`：新增 `deverV0.1.4_20260430.bin` 更新分析；新版雖然補入了混合鏈路、配對、充電、DFU 與鏈路恢復等路徑，協議面也更寬，但實作層仍然呈現明顯的補丁式控制流堆疊、沉重的全域狀態耦合、薄弱的語義紀律與失衡的模組邊界控制，韌體實作水準很低，與主流滑鼠韌體的工程實踐水準仍有顯著差距。 |
+#### `VAXEE`
+
+- 資料夾：`VAXEE`
+- 韌體集合：`NP-01S_v2_Driver.c`
+- 簡要說明：VAXEE NP-01S v2 滑鼠韌體與高速 USB 接收器映像的逆向材料，重點分析移動資料的端到端流轉路徑、影響滑鼠手感的韌體層機制，以及競技模式與軌跡模式的實作細節。
+- 更新記錄：`-`
+
+#### `CRDRAKO`
+
+- 資料夾：`CRDRAKO`
+- 韌體集合：`54H_mouse_Cpurad_App_v01.07.01.14.bin`<br>`54H_dongle_Cpuapp_App_v01.07.01.14.bin`<br>`54H_dongle_Cpurad_App_v01.07.01.14.bin`<br>`54H_mouse_Cpurad_App_v01.06.01.12.c`
+- 簡要說明：54H 滑鼠與接收器韌體家族的逆向材料，重點分析移動資料的端到端流轉路徑、影響滑鼠手感的韌體層機制，以及競技模式的實作細節。
+- 更新記錄：`2026-04-30`：新增 `54H_mouse_Cpurad_App_v01.07.01.14.bin` 更新分析。相對 `v01.06.01.12`，新版仍然建立在同一條 `Zephyr + PAW3950 + profile/macro/protocol` 底座上，但已將平台版本明確化，並把執行時職責進一步拆成較清楚的 USB、RF 接收、電池、電源管理、感測器後端與協議處理服務。配置熱路徑也從舊版直接以 profile 固定偏移驅動行為，演進為活動快取、內部命令與後端指令碼回放相結合的模型，因此更適合被理解為一次面向產品化的增量擴寫，而不是底座重構。
+
+#### `NINJUTSO`
+
+- 資料夾：`NINJUTSO`
+- 韌體集合：`sora-v3_mouse_pid57360_ver_ae1606.bin`<br>`sora-v3_mouse_pid57360_ver_ae1607.bin`<br>`sora-v3_mouse_pid57360_ver_ae1609.bin`<br>`sora-v3_mouse_pid57360_ver_ae1609.bin.c`
+- 簡要說明：Ninjutso Sora V3 滑鼠韌體逆向材料，採用原相客製主控與原相客製感測器，重點分析 `ver_ae1609` 樣本中由 `ROM` 主導的雙層執行架構、`profile` 到執行期映像的物化流程、具 route-aware 特性的無線 `transport` 組織方式，以及 `System Mode`、`LOD`、optical 設定、`report-rate` 與「Frame Sync」宣稱在韌體中的實際行為。
+- 更新記錄：`-`
+
+#### `CHAOS`
+
+- 資料夾：`CHAOS`
+- 韌體集合：`CHAOS_8K_J__20260430.hex`<br>`deverV0.1.4_20260430.bin`<br>`zephyr.signed_20260430.bin`
+- 簡要說明：CHAOS 8K 滑鼠韌體相關逆向材料，重點分析 25,000 FPS 超頻競技模式的實作細節，以及與「手感值」與「飛雷神」功能相關的韌體級調校邏輯；整體程式碼與系統設計則呈現出相對不成熟且穩定性偏弱的特徵。
+- 更新記錄：`2026-04-30`：新增 `deverV0.1.4_20260430.bin` 更新分析；新版雖然補入了混合鏈路、配對、充電、DFU 與鏈路恢復等路徑，協議面也更寬，但實作層仍然呈現明顯的補丁式控制流堆疊、沉重的全域狀態耦合、薄弱的語義紀律與失衡的模組邊界控制，韌體實作水準很低，與主流滑鼠韌體的工程實踐水準仍有顯著差距。
 
 ### 家族選用說明
 
@@ -140,12 +182,33 @@ Special thanks to the Chinese peripheral enthusiast **"小白菜"** for supporti
 
 ### 收录的固件家族
 
-| 文件夹 | 固件集合 | 简要说明 | 更新记录 |
-| --- | --- | --- | --- |
-| `VAXEE` | `NP-01S_v2_Driver.c` | VAXEE NP-01S v2 鼠标固件与高速 USB 接收器镜像的逆向材料，重点分析移动数据的端到端流转路径、影响鼠标手感的固件层机制，以及竞技模式与轨迹模式的实现细节。 | `-` |
-| `CRDRAKO` | `54H_mouse_Cpurad_App_v01.07.01.14.bin`、`54H_dongle_Cpuapp_App_v01.07.01.14.bin`、`54H_dongle_Cpurad_App_v01.07.01.14.bin`、`54H_mouse_Cpurad_App_v01.06.01.12.c` | 54H 鼠标与接收器固件家族的逆向材料，重点分析移动数据的端到端流转路径、影响鼠标手感的固件层机制，以及竞技模式的实现细节。 | `2026-04-30`：新增 `54H_mouse_Cpurad_App_v01.07.01.14.bin` 更新分析。相对 `v01.06.01.12`，新版仍然建立在同一条 `Zephyr + PAW3950 + profile/macro/protocol` 底座上，但已经把平台版本明确定出来，并将运行时职责进一步拆成更清晰的 USB、RF 接收、电池、电源管理、传感器后端与协议处理服务。配置热路径也从旧版直接以 profile 固定偏移驱动行为，演进为活动缓存、内部命令与后端脚本回放相结合的模型，因此更适合被理解为一次面向产品化的增量扩写，而不是底座重构。 |
-| `NINJUTSO` | `sora-v3_mouse_pid57360_ver_ae1606.bin`、`sora-v3_mouse_pid57360_ver_ae1607.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin`、`sora-v3_mouse_pid57360_ver_ae1609.bin.c` | Ninjutso Sora V3 鼠标固件逆向材料，采用原相定制主控与原相定制传感器，重点分析 `ver_ae1609` 样本中由 `ROM` 主导的双层运行架构、`profile` 到运行时镜像的物化流程、具 route-aware 特性的无线 `transport` 组织方式，以及 `System Mode`、`LOD`、optical 设置、`report-rate` 与“Frame Sync”宣传在固件中的实际行为。 | `-` |
-| `CHAOS` | `CHAOS_8K_J__20260430.hex`、`deverV0.1.4_20260430.bin`、`zephyr.signed_20260430.bin` | CHAOS 8K 鼠标固件相关逆向材料，重点分析 25,000 FPS 超频竞技模式的实现细节，以及与“手感值”和“飞雷神”功能相关的固件级调校逻辑；其整体代码与系统设计则表现出相对不成熟且稳定性偏弱的特征。 | `2026-04-30`：新增 `deverV0.1.4_20260430.bin` 更新分析；新版虽然补入了混合链路、配对、充电、DFU 与链路恢复等路径，协议面也更宽，但实现层仍然表现出明显的补丁式控制流堆叠、沉重的全局状态耦合、薄弱的语义纪律与失衡的模块边界控制，固件实现水平很低，与主流鼠标固件的工程实践水平仍有显著差距。 |
+#### `VAXEE`
+
+- 文件夹：`VAXEE`
+- 固件集合：`NP-01S_v2_Driver.c`
+- 简要说明：VAXEE NP-01S v2 鼠标固件与高速 USB 接收器镜像的逆向材料，重点分析移动数据的端到端流转路径、影响鼠标手感的固件层机制，以及竞技模式与轨迹模式的实现细节。
+- 更新记录：`-`
+
+#### `CRDRAKO`
+
+- 文件夹：`CRDRAKO`
+- 固件集合：`54H_mouse_Cpurad_App_v01.07.01.14.bin`<br>`54H_dongle_Cpuapp_App_v01.07.01.14.bin`<br>`54H_dongle_Cpurad_App_v01.07.01.14.bin`<br>`54H_mouse_Cpurad_App_v01.06.01.12.c`
+- 简要说明：54H 鼠标与接收器固件家族的逆向材料，重点分析移动数据的端到端流转路径、影响鼠标手感的固件层机制，以及竞技模式的实现细节。
+- 更新记录：`2026-04-30`：新增 `54H_mouse_Cpurad_App_v01.07.01.14.bin` 更新分析。相对 `v01.06.01.12`，新版仍然建立在同一条 `Zephyr + PAW3950 + profile/macro/protocol` 底座上，但已经把平台版本明确定出来，并将运行时职责进一步拆成更清晰的 USB、RF 接收、电池、电源管理、传感器后端与协议处理服务。配置热路径也从旧版直接以 profile 固定偏移驱动行为，演进为活动缓存、内部命令与后端脚本回放相结合的模型，因此更适合被理解为一次面向产品化的增量扩写，而不是底座重构。
+
+#### `NINJUTSO`
+
+- 文件夹：`NINJUTSO`
+- 固件集合：`sora-v3_mouse_pid57360_ver_ae1606.bin`<br>`sora-v3_mouse_pid57360_ver_ae1607.bin`<br>`sora-v3_mouse_pid57360_ver_ae1609.bin`<br>`sora-v3_mouse_pid57360_ver_ae1609.bin.c`
+- 简要说明：Ninjutso Sora V3 鼠标固件逆向材料，采用原相定制主控与原相定制传感器，重点分析 `ver_ae1609` 样本中由 `ROM` 主导的双层运行架构、`profile` 到运行时镜像的物化流程、具 route-aware 特性的无线 `transport` 组织方式，以及 `System Mode`、`LOD`、optical 设置、`report-rate` 与“Frame Sync”宣传在固件中的实际行为。
+- 更新记录：`-`
+
+#### `CHAOS`
+
+- 文件夹：`CHAOS`
+- 固件集合：`CHAOS_8K_J__20260430.hex`<br>`deverV0.1.4_20260430.bin`<br>`zephyr.signed_20260430.bin`
+- 简要说明：CHAOS 8K 鼠标固件相关逆向材料，重点分析 25,000 FPS 超频竞技模式的实现细节，以及与“手感值”和“飞雷神”功能相关的固件级调校逻辑；其整体代码与系统设计则表现出相对不成熟且稳定性偏弱的特征。
+- 更新记录：`2026-04-30`：新增 `deverV0.1.4_20260430.bin` 更新分析；新版虽然补入了混合链路、配对、充电、DFU 与链路恢复等路径，协议面也更宽，但实现层仍然表现出明显的补丁式控制流堆叠、沉重的全局状态耦合、薄弱的语义纪律与失衡的模块边界控制，固件实现水平很低，与主流鼠标固件的工程实践水平仍有显著差距。
 
 ### 家族选用说明
 
